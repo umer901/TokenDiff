@@ -1,0 +1,58 @@
+[
+  {
+    "id": "python-prompt-growth",
+    "path": "agent.py",
+    "before": "SYSTEM_PROMPT = 'Summarize the input accurately.'\nresult = llm(SYSTEM_PROMPT, user_input)\n",
+    "after": "SYSTEM_PROMPT = 'Summarize the input accurately. Summarize the input accurately. Summarize the input accurately. Summarize the input accurately.'\nresult = llm(SYSTEM_PROMPT, user_input)\n",
+    "expectedCategories": ["prompt-growth"]
+  },
+  {
+    "id": "typescript-extra-handoff",
+    "path": "pipeline.ts",
+    "before": "async function answer(question: string) {\n  return answerAgent.run(question);\n}\n",
+    "after": "async function answer(question: string) {\n  const relay = await relayAgent.run({ instruction: 'Repeat the question verbatim without changes', question });\n  return answerAgent.run(relay);\n}\n",
+    "expectedCategories": ["agent-handoff"]
+  },
+  {
+    "id": "go-redundant-tool-call",
+    "path": "pipeline.go",
+    "before": "func Answer(id string) string {\n    result := tools.Lookup(id)\n    return llm.Summarize(result)\n}\n",
+    "after": "func Answer(id string) string {\n    result := tools.Lookup(id)\n    duplicate := tools.Lookup(id)\n    return llm.Summarize(result + duplicate)\n}\n",
+    "expectedCategories": ["redundant-tool-call"]
+  },
+  {
+    "id": "python-intentional-safety-step",
+    "path": "pipeline.py",
+    "before": "def answer(user_input):\n    return agent.run(user_input)\n",
+    "after": "def answer(user_input):\n    # New requirement: screen unsafe requests before answering.\n    verdict = safety_tool.classify(user_input)\n    if verdict.blocked:\n        return 'Request blocked'\n    return agent.run(user_input)\n",
+    "expectedCategories": []
+  },
+  {
+    "id": "rust-unrelated-change",
+    "path": "server.rs",
+    "before": "fn health() -> &'static str {\n    \"ok\"\n}\n",
+    "after": "fn health() -> &'static str {\n    \"healthy\"\n}\n",
+    "expectedCategories": []
+  },
+  {
+    "id": "python-preexisting-inefficiency",
+    "path": "pipeline.py",
+    "before": "def answer(query):\n    first = search(query)\n    duplicate = search(query)\n    return llm(first + duplicate)\n\ndef health():\n    return 'ok'\n",
+    "after": "def answer(query):\n    first = search(query)\n    duplicate = search(query)\n    return llm(first + duplicate)\n\ndef health():\n    return 'healthy'\n",
+    "expectedCategories": []
+  },
+  {
+    "id": "markdown-intentional-prompt-change",
+    "path": "prompts/system.md",
+    "before": "Summarize the supplied document.\n",
+    "after": "Summarize the supplied document.\nPreserve medication dosages and units exactly; never infer missing values.\n",
+    "expectedCategories": []
+  },
+  {
+    "id": "javascript-distinct-tool-arguments",
+    "path": "comparison.js",
+    "before": "const current = await lookup(currentId);\nreturn summarize(current);\n",
+    "after": "const current = await lookup(currentId);\nconst previous = await lookup(previousId);\nreturn compare(current, previous);\n",
+    "expectedCategories": []
+  }
+]
