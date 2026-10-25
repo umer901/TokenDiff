@@ -1,0 +1,42 @@
+name: TokenDiff
+description: Review pull requests for AI pipeline efficiency regressions using your own API key.
+author: TokenDiff
+branding:
+  icon: activity
+  color: purple
+inputs:
+  provider:
+    description: AI provider (gemini or openai).
+    required: true
+  model:
+    description: Explicit model ID supported by your selected provider and account.
+    required: true
+  api-key:
+    description: Provider API key from GitHub Secrets. Empty keys skip review.
+    required: false
+  github-token:
+    description: Token with contents read and pull-requests write permissions.
+    default: ${{ github.token }}
+  context-mode:
+    description: diff (changed hunks and nearby code) or repository (also related files).
+    default: diff
+  include:
+    description: Optional newline-separated file globs. Built-in exclusions always apply.
+  exclude:
+    description: Additional newline-separated file globs to exclude.
+  max-context-chars:
+    description: Maximum serialized code-context characters sent to the provider.
+    default: '60000'
+  max-output-tokens:
+    description: Maximum provider output tokens, including reasoning where applicable.
+    default: '4096'
+outputs:
+  status:
+    description: completed, partial, skipped, or error. Never interpret skipped/error as a clean review.
+  findings-count:
+    description: Number of validated findings; read together with status.
+  report-path:
+    description: Absolute path to the JSON report in the runner temporary directory.
+runs:
+  using: node24
+  main: dist/index.cjs
