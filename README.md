@@ -1,35 +1,30 @@
 # TokenDiff
 
-**AI pipeline efficiency code review for pull requests.**
+**Catch AI cost regressions before you merge: bloated prompts, duplicate tool calls, and unnecessary agent handoffs.**  
+TokenDiff reviews your PR and suggests concrete pipeline changes using retrieved guidance from research such as **FrugalGPT, RouteLLM, and LLMLingua**.
 
-TokenDiff identifies avoidable prompt growth, unnecessary agent handoffs, redundant tool calls, and avoidable model-routing or pipeline-structure regressions introduced by a PR. Catch efficiency regressions during development, before they become recurring application costs.
+A GitHub Action for any programming language. Bring your own Gemini or OpenAI key; get one updated PR comment with source evidence, suggestions, and research links. No TokenDiff account, backend, or instrumentation required. Findings are advisory and never block a merge.
 
-It runs as a GitHub Action, reviews text-based code in any language, and uses your own **Gemini or OpenAI API key**. Findings are advisory and never fail the workflow. No TokenDiff account, backend, or application instrumentation is required.
+[Get started](#quickstart-gemini-free-tier) · [See an example](#what-a-review-looks-like) · [How it works](#how-it-works) · [Configuration](#inputs-and-outputs)
 
-## Example finding
+## Quickstart: Gemini free tier
 
-TokenDiff maintains one PR comment and writes an Actions job summary. Each finding includes severity, confidence, a changed source location, exact evidence, likely impact, a concrete suggestion, its tradeoff, a verification plan, and links to retrieved optimization guidance.
+TokenDiff is free, open-source software. You can run reviews using Gemini's free API quota when your account and chosen model are eligible. Provider quotas and GitHub Actions usage limits still apply.
 
-> **Redundant tool call — medium severity, high confidence**  
-> `pipeline.ts:42` adds another lookup with the same input immediately after the existing lookup. Its result is appended to the same model context.  
-> **Likely impact:** Repeats retrieval work and may duplicate input context.  
-> **Suggestion:** Reuse the first result if both calls should retrieve the same data.
+### 1. Add your API key and model
 
-This is an illustrative finding, not a measured result. Extra calls and longer prompts can serve new functionality or safety requirements. TokenDiff asks the model to account for those tradeoffs and report only plausible regressions. It does not invent runtime token totals or cost savings.
+Get a [Gemini API key](https://ai.google.dev/gemini-api/docs/api-key). In your GitHub repository, open **Settings → Secrets and variables → Actions** and add:
 
-## Research-backed suggestions
+| Type | Name | Value |
+| --- | --- | --- |
+| Repository secret | `GEMINI_API_KEY` | Your Gemini API key. |
+| Repository variable | `TOKENDIFF_GEMINI_MODEL` | An explicit model ID available to your account with free-tier quota and support for [structured outputs through Interactions](https://ai.google.dev/gemini-api/docs/structured-output). |
 
-Before each review, TokenDiff retrieves relevant guidance from a bundled collection of nine techniques based on **FrugalGPT, RouteLLM, LLMLingua, LongLLMLingua**, and primary engineering guidance from Anthropic and OpenAI. This local lexical RAG step requires no backend, vector database, embeddings key, or live web access.
+Check the model's [free-tier availability and pricing](https://ai.google.dev/gemini-api/docs/pricing) before using it. TokenDiff does not select or switch models for you.
 
-Suggestions can identify smaller-model candidates for bounded subtasks, quality-gated escalation, useful stage boundaries with compact intermediate results, context compression, targeted retrieval, bounded tool output, and reusable prompt prefixes. Each suggestion must explain its tradeoff and how to validate it. Source links are constructed from retrieved catalog IDs; invented or unretrieved citations reject the review.
+### 2. Add the workflow
 
-Splitting a pipeline can add calls and latency. A less frequent task is not necessarily simple or low consequence. TokenDiff asks for evidence that the PR introduced an avoidable regression and does not recommend model downgrades based on model names alone. See the [knowledge catalog, sources, limits, and maintenance guide](docs/optimization-knowledge.md).
-
-## Quickstart: Gemini
-
-1. Obtain a [Gemini API key](https://ai.google.dev/gemini-api/docs/api-key). Add an Actions repository **secret** named `GEMINI_API_KEY` under **Settings → Secrets and variables → Actions**.
-2. Add an Actions **variable** named `TOKENDIFF_GEMINI_MODEL` containing an explicit model ID available to your account. Choose a text model supporting [structured outputs through Interactions](https://ai.google.dev/gemini-api/docs/structured-output).
-3. Add the workflow below as `.github/workflows/tokendiff.yml`. Replace `YOUR_RELEASE_SHA` with the full commit SHA of the TokenDiff revision you reviewed. A pushed commit works before a release tag exists. You can also copy the [example workflow](examples/tokendiff.yml).
+Create `.github/workflows/tokendiff.yml` with the following content. Replace `YOUR_RELEASE_SHA` with the full commit SHA of the TokenDiff revision you reviewed; a pushed commit works before a release tag exists. You can also copy the [example workflow](examples/tokendiff.yml).
 
 ```yaml
 name: TokenDiff
@@ -61,7 +56,82 @@ jobs:
 
 No checkout step is needed: TokenDiff reads immutable source revisions through GitHub's API.
 
-Gemini offers free quotas for eligible models/accounts. A key itself does not guarantee free calls: billing, availability, region, and quota depend on your project. TokenDiff never automatically switches providers or models. Consult [pricing](https://ai.google.dev/gemini-api/docs/pricing), [rate limits](https://ai.google.dev/gemini-api/docs/rate-limits), and [data-use and regional terms](https://ai.google.dev/gemini-api/terms). Free-tier data handling varies by account and region; review those terms before sending private code.
+### 3. Open a pull request
+
+Push the workflow to your default branch, then open a PR that changes an AI pipeline. For a useful first review, try a change that repeats the same retrieval call or appends the same large tool result twice to a prompt.
+
+Open the PR to see TokenDiff's review comment, or go to **Actions → TokenDiff → Summary**. Subsequent runs update the same comment. A review with no supported findings is a valid result; unrelated changes and justified additional work should not produce findings.
+
+Missing API keys skip the review. Exhausted quota produces an explicit error report and warning, never a clean review. Fork and Dependabot PRs normally lack access to repository secrets.
+
+> **About “free”:** A Gemini key does not guarantee free calls. Availability, billing, quotas, and data handling depend on your model, account, and region. Review Google's [pricing](https://ai.google.dev/gemini-api/docs/pricing), [rate limits](https://ai.google.dev/gemini-api/docs/rate-limits), and [data-use terms](https://ai.google.dev/gemini-api/terms) before sending code. Unpaid services can use submitted content to improve Google's products; the terms include regional exceptions and restrictions.
+
+## What a review looks like
+
+### Changes worth reviewing
+
+Efficiency regressions often arrive as reasonable feature changes. These illustrative diffs show the kinds of tradeoffs TokenDiff can review.
+
+**Giving a formatting stage more context.** A PR forwards the analyst's full conversation to the stage that renders an approved decision:
+
+```diff
+ decision = await analyze_case(case, retrieved_documents)
+ return await render_customer_summary(
+     decision=decision.approved_summary,
+-    context=decision.required_citations,
++    context=decision.full_transcript,
+     instructions="Format the approved decision; do not re-evaluate it.",
+ )
+```
+
+**Potential suggestion:** Keep the analysis and presentation stages separate, passing the approved facts and required citations through a compact, structured contract. The full transcript may add irrelevant tool output and intermediate reasoning. Validate that summaries retain required evidence before reducing context.
+
+**Simplifying a pipeline by removing conditional work.** A PR makes a specialist review part of every request:
+
+```diff
+ assessment = await assess_claim(claim)
+-if assessment.needs_specialist_review:
+-    assessment = await specialist_review(claim, assessment)
++assessment = await specialist_review(claim, assessment)
+ return await format_decision(assessment)
+```
+
+**Potential suggestion:** Retain conditional escalation if the existing gate reliably identifies cases needing specialist work. Evaluate whether a smaller model can handle the bounded formatting stage while preserving the specialist for difficult cases. Compare quality, escalation rate, and total usage; unconditional review may be justified by a new safety requirement.
+
+These are possible review directions, not guaranteed findings. A smaller-model suggestion needs supporting context about the stage's requirements and current routing; the function name alone is insufficient.
+
+### Evidence in the PR comment
+
+In this separate pipeline example, TokenDiff flagged a growing transcript passed through five sequential model stages. The comment identifies the changed source and explains the suspected regression. The **partial** status makes the review's coverage limitations visible.
+
+![TokenDiff PR comment showing a prompt-growth finding with severity, confidence, and source evidence](docs/images/review-finding.png)
+
+### A concrete next step
+
+The review suggests passing compact intermediate state between stages, explains what context could be lost, and proposes a way to check quality and usage. Links connect the suggestion to the retrieved engineering guidance.
+
+![TokenDiff suggestion to replace a rolling transcript with compact intermediate state, including tradeoff, verification, and source links](docs/images/review-suggestion.png)
+
+Each finding includes severity, confidence, a changed source location, exact evidence, likely impact, a concrete suggestion, its tradeoff, a verification plan, and links to retrieved optimization guidance.
+
+Extra calls and longer prompts can serve new functionality or safety requirements. TokenDiff asks the model to account for those tradeoffs and report only plausible regressions. It does not invent runtime token totals or cost savings. These screenshots illustrate review output, not measured savings or guaranteed detection.
+
+## How it works
+
+1. **Read the PR.** Compare immutable merge-base and head revisions, prioritizing changed code within a bounded context budget.
+2. **Retrieve relevant techniques.** Select guidance from a bundled research and engineering catalog using signals in the code.
+3. **Review once.** Send the selected code and guidance to your chosen provider, looking for inefficiencies introduced or worsened by this PR.
+4. **Validate and report.** Check findings against supplied source excerpts and retrieved references, then publish a PR comment, job summary, and JSON report.
+
+TokenDiff reviews source code; it does not measure your application's runtime usage. Existing inefficiencies are outside the review's scope, and an empty result covers only the code included in the review.
+
+## Research-backed suggestions
+
+Before each review, TokenDiff retrieves relevant guidance from a bundled collection of nine techniques based on **FrugalGPT, RouteLLM, LLMLingua, LongLLMLingua**, and primary engineering guidance from Anthropic and OpenAI. This local lexical RAG step requires no backend, vector database, embeddings key, or live web access.
+
+Suggestions can identify smaller-model candidates for bounded subtasks, quality-gated escalation, useful stage boundaries with compact intermediate results, context compression, targeted retrieval, bounded tool output, and reusable prompt prefixes. Each suggestion must explain its tradeoff and how to validate it. Source links are constructed from retrieved catalog IDs; invented or unretrieved citations reject the review.
+
+Splitting a pipeline can add calls and latency. A less frequent task is not necessarily simple or low consequence. TokenDiff asks for evidence that the PR introduced an avoidable regression and does not recommend model downgrades based on model names alone. See the [knowledge catalog, sources, limits, and maintenance guide](docs/optimization-knowledge.md).
 
 ## Quickstart: OpenAI
 
