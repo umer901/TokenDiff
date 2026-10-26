@@ -2,6 +2,7 @@ import { ConfigurationError, readConfig, type GetInput } from './config.js';
 import { buildContext, emptyCoverage } from './context.js';
 import { createTransport, ProviderFailure, review, type ProviderTransport } from './providers.js';
 import { redact, renderReport } from './report.js';
+import { serializeContext } from './context-format.js';
 import type { Config, GitHubRepository, Report } from './types.js';
 
 export interface Runtime {
@@ -64,11 +65,13 @@ export async function runAction(runtime: Runtime, dependencies: Dependencies): P
         } else {
           const context = redact(built.context, secrets);
           // Re-check after redaction in case a very short supplied secret expanded the payload.
-          report.coverage.contextChars = JSON.stringify(context).length;
+          report.coverage.contextChars = serializeContext(context).length;
           if (report.coverage.contextChars > config.maxContextChars) throw new ProviderFailure('Redacted context exceeds the configured budget. Review unavailable.');
           const result = await review(context, (dependencies.transport ?? createTransport)(config));
           report.findings = result.findings;
           if (result.usage) report.usage = result.usage;
+          if (result.diagnostics) report.diagnostics = result.diagnostics;
+          if (result.guidance) report.guidance = result.guidance;
           report.status = report.coverage.omittedFiles.length || report.coverage.limitations.length ? 'partial' : 'completed';
           report.reason = report.status === 'partial' ? 'AI review completed with coverage limitations.' : 'AI review completed for the included PR changes.';
         }
@@ -82,6 +85,8 @@ export async function runAction(runtime: Runtime, dependencies: Dependencies): P
     } else {
       report.reason = error instanceof ProviderFailure ? error.message : 'Required GitHub data or review processing was unavailable. Check permissions and retry the workflow.';
       if (error instanceof ProviderFailure && error.usage) report.usage = error.usage;
+      if (error instanceof ProviderFailure && error.diagnostics) report.diagnostics = error.diagnostics;
+      if (error instanceof ProviderFailure && error.guidance) report.guidance = error.guidance;
       runtime.warning(report.reason);
     }
   }

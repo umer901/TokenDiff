@@ -1,5 +1,7 @@
 import type { Config, GitHubRepository, PullRequest, Report, ReviewContext } from '../src/types.js';
 import type { Runtime } from '../src/action.js';
+import { TECHNIQUES } from '../src/knowledge/catalog.js';
+import { excerptId } from '../src/context-format.js';
 
 export const config: Config = {
   provider: 'gemini', model: 'test-model', apiKey: 'test-api-key-secret', githubToken: 'test-github-secret',
@@ -20,7 +22,19 @@ export const finding = {
   path: 'pipeline.ts', side: 'after' as const, startLine: 2, endLine: 2,
   evidence: 'const duplicate = await fetchData(id);', explanation: 'The same data is fetched again with identical arguments.',
   impact: 'The added call may repeat tool work and context.', suggestion: 'Reuse the existing data result.',
+  tradeoff: 'Reuse is safe only for equivalent reads with matching freshness and authorization.',
+  verification: 'Compare results and call traces for repeated IDs and permission boundaries.',
+  techniqueIds: ['reuse-or-compute'],
+  references: [{ techniqueId: 'reuse-or-compute', title: TECHNIQUES[0]!.source.title, url: TECHNIQUES[0]!.source.url }],
 };
+
+export function proposal(value = finding, input = context) {
+  const file = input.files.find(f => f.path === value.path)!;
+  const excerpt = file.excerpts.find(e => e.side === value.side && value.startLine >= e.startLine
+    && value.endLine < e.startLine + e.lines.length)!;
+  const { path: _path, side: _side, evidence: _evidence, references: _references, ...rest } = value;
+  return { ...rest, excerptId: excerptId(file, excerpt) };
+}
 
 export function repository(overrides: Partial<GitHubRepository> = {}): GitHubRepository {
   return {

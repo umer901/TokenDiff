@@ -11,7 +11,8 @@ export interface Fixture {
 }
 
 export async function loadFixtures(): Promise<Fixture[]> {
-  return JSON.parse(await readFile(new URL('../tests/fixtures/reviews.json', import.meta.url), 'utf8')) as Fixture[];
+  const files = await Promise.all(['reviews.json', 'pipelines.json', 'architecture.json'].map(name => readFile(new URL(`../tests/fixtures/${name}`, import.meta.url), 'utf8')));
+  return files.flatMap(text => JSON.parse(text) as Fixture[]);
 }
 
 export async function fixtureContext(fixture: Fixture, config: Config) {

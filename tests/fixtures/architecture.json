@@ -1,0 +1,48 @@
+[
+  {
+    "id": "python-removed-model-routing",
+    "path": "pipeline.py",
+    "before": "# Classification is a bounded, low-risk label task; complex analysis uses a reasoner.\ndef select_model(task):\n    if task.kind == \"label\":\n        return small_classifier\n    return reasoner\n\ndef run(task):\n    return select_model(task).run(task.input)\n",
+    "after": "# Classification is a bounded, low-risk label task; complex analysis uses a reasoner.\ndef select_model(task):\n    return reasoner\n\ndef run(task):\n    return select_model(task).run(task.input)\n",
+    "expectedCategories": [
+      "model-routing"
+    ]
+  },
+  {
+    "id": "python-unconditional-expensive-stage",
+    "path": "pipeline.py",
+    "before": "async def pipeline(request):\n    fields = extract_fields(request.document)\n    if request.needs_analysis:\n        reasoning = await analysis_agent.run(fields)\n        return render(fields, reasoning)\n    return render(fields, None)\n",
+    "after": "async def pipeline(request):\n    fields = extract_fields(request.document)\n    reasoning = await analysis_agent.run(fields)\n    if request.needs_analysis:\n        return render(fields, reasoning)\n    return render(fields, None)\n",
+    "expectedCategories": [
+      "pipeline-structure"
+    ]
+  },
+  {
+    "id": "python-rare-high-consequence-task",
+    "path": "pipeline.py",
+    "before": "async def assess(case):\n    return await medical_reasoner.run(case)\n",
+    "after": "async def assess(case):\n    # This infrequent task determines urgent clinical escalation; retain the reasoner.\n    return await medical_reasoner.run(case)\n",
+    "expectedCategories": []
+  },
+  {
+    "id": "python-model-name-only-change",
+    "path": "pipeline.py",
+    "before": "MODEL = \"model-a\"\nresult = client.generate(model=MODEL, input=question)\n",
+    "after": "MODEL = \"model-b\"\nresult = client.generate(model=MODEL, input=question)\n",
+    "expectedCategories": []
+  },
+  {
+    "id": "python-intentional-quality-stage",
+    "path": "pipeline.py",
+    "before": "async def assess(case):\n    return await extractor.run(case)\n",
+    "after": "async def assess(case):\n    extracted = await extractor.run(case)\n    # New product requirement: verify claims before returning decisions.\n    checked = await verifier.run({\"claims\": extracted, \"source\": case})\n    return checked\n",
+    "expectedCategories": []
+  },
+  {
+    "id": "python-quality-gated-routing",
+    "path": "pipeline.py",
+    "before": "async def classify(text):\n    return await strong_model.run(text)\n",
+    "after": "async def classify(text):\n    candidate = await small_model.run(text)\n    if schema_valid(candidate) and rule_checks_pass(text, candidate):\n        return candidate\n    return await strong_model.run(text)\n",
+    "expectedCategories": []
+  }
+]

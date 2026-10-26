@@ -73,7 +73,7 @@ export interface Coverage {
 }
 
 export interface Finding {
-  category: 'prompt-growth' | 'agent-handoff' | 'redundant-tool-call';
+  category: 'prompt-growth' | 'agent-handoff' | 'redundant-tool-call' | 'model-routing' | 'pipeline-structure';
   severity: 'low' | 'medium' | 'high';
   confidence: 'low' | 'medium' | 'high';
   path: string;
@@ -84,6 +84,10 @@ export interface Finding {
   explanation: string;
   impact: string;
   suggestion: string;
+  tradeoff: string;
+  verification: string;
+  techniqueIds: string[];
+  references: Array<{ techniqueId: string; title: string; url: string }>;
 }
 
 export interface Usage {
@@ -95,6 +99,23 @@ export interface Usage {
 export interface ProviderResult {
   findings: Finding[];
   usage?: Usage;
+  diagnostics?: ReviewDiagnostics;
+  guidance?: import('./knowledge/retrieve.js').GuidanceCoverage;
+}
+
+export interface ReviewAttempt {
+  attempt: number;
+  elapsedMs: number;
+  outcome: 'completed' | 'provider-error' | 'invalid-response' | 'incomplete-response';
+  httpStatus?: number;
+  reason: string;
+  providerCode?: string;
+  retryDelayMs?: number;
+}
+
+export interface ReviewDiagnostics {
+  attempts: ReviewAttempt[];
+  elapsedMs: number;
 }
 
 export interface Report {
@@ -109,6 +130,8 @@ export interface Report {
   findings: Finding[];
   coverage: Coverage;
   usage?: Usage;
+  diagnostics?: ReviewDiagnostics;
+  guidance?: import('./knowledge/retrieve.js').GuidanceCoverage;
   warnings: string[];
 }
 

@@ -110,3 +110,76 @@ test('omitted changed files do not return as supporting files', async () => {
   assert.equal(built.coverage.supportingFiles.length, 0);
   assert.equal(built.coverage.omittedFiles.length, 1);
 });
+
+test('repository mode supplies distant referenced helpers on both revisions before other files', async () => {
+  const { loadFixtures, fixtureContext } = await import('../scripts/fixtures.js');
+  const fixture = (await loadFixtures()).find(f => f.id === 'python-pipeline-tripled-tool-output')!;
+  const diff = await fixtureContext(fixture, config);
+  assert.equal(diff.context.files[0]!.excerpts.some(e => e.lines.some(l => l.includes('def model_tool_output'))), false);
+  const built = await fixtureContext(fixture, { ...config, contextMode: 'repository' });
+  for (const side of ['before', 'after']) {
+    const helper = built.context.files[0]!.excerpts.find(e => e.side === side && e.lines.some(l => l.includes('def model_tool_output')));
+    assert.ok(helper);
+    assert.ok(helper.lines.some(l => l.includes('return json.dumps')));
+    assert.deepEqual(helper.changedLines, []);
+  }
+  const { serializeContext } = await import('../src/context-format.js');
+  assert.equal(built.coverage.contextChars, serializeContext(built.context).length);
+  assert.ok(built.coverage.contextChars <= config.maxContextChars);
+  const repeated = await fixtureContext(fixture, { ...config, contextMode: 'repository' });
+  assert.equal(serializeContext(built.context), serializeContext(repeated.context));
+});
+
+test('same-file helpers obey budget, preserve changed code, and report omissions', async () => {
+  const before = 'def encode(value):\n    return "' + 'x'.repeat(3000) + '"\n' + '\n'.repeat(50) + 'result = encode(value)\n';
+  const after = before.replace('result = encode(value)', 'result = encode(value) * 3');
+  const source = repository({ readSource: async (_path, sha) => ({ text: sha === pr.mergeBaseSha ? before : after }) });
+  const built = await buildContext(source, pr, [{ path: 'code.py', status: 'modified' }], { ...config, contextMode: 'repository', maxContextChars: 1000 });
+  assert.equal(built.coverage.reviewedFiles.length, 1);
+  assert.ok(built.coverage.contextChars <= 1000);
+  assert.ok(built.context.files[0]!.excerpts.some(e => e.changedLines.length));
+  assert.ok(built.coverage.omittedFiles.some(o => /Referenced helper encode/.test(o.reason)));
+});
+
+test('same-file references use renamed before source and prioritize helpers over related files', async () => {
+  const sourceText = 'def encode(value):\n    return str(value)\n' + '\n'.repeat(45) + 'output = encode(value)\n';
+  const calls: string[] = [];
+  const source = repository({
+    readSource: async (path, sha) => {
+      calls.push(path);
+      return { text: path === 'src/other.py' ? 'x'.repeat(5000) : sha === pr.mergeBaseSha ? sourceText : sourceText.replace('output = encode(value)', 'output = encode(value) * 3') };
+    },
+    listRepositoryFiles: async () => ({ files: [{ path: 'src/other.py', size: 5000 }], truncated: false }),
+  });
+  const built = await buildContext(source, pr, [{ path: 'src/new.py', previousPath: 'src/old.py', status: 'renamed' }], { ...config, contextMode: 'repository', maxContextChars: 5000 });
+  assert.deepEqual(calls.slice(0, 2), ['src/old.py', 'src/new.py']);
+  assert.ok(built.context.files[0]!.excerpts.some(e => e.side === 'before' && e.lines.includes('def encode(value):')));
+  assert.ok(built.coverage.omittedFiles.some(o => o.path === 'src/other.py'));
+});
+
+test('helper selection is bounded and keeps changed hunks ahead of dependency context', async () => {
+  const helpers = Array.from({ length: 22 }, (_, i) => `def helper_${i}():\n    return "ok"\n`).join('\n');
+  const calls = Array.from({ length: 22 }, (_, i) => `helper_${i}()`).join(' + ');
+  const before = helpers + '\n'.repeat(45) + `result = ${calls}\n`;
+  const source = repository({ readSource: async (path, sha) => ({ text: path === 'z.py'
+    ? sha === pr.mergeBaseSha ? 'old' : 'new'
+    : sha === pr.mergeBaseSha ? before : before.replace('result = ', 'result = "prefix" + ') }) });
+  const built = await buildContext(source, { ...pr, changedFiles: 2 }, [{ path: 'a.py', status: 'modified' }, { path: 'z.py', status: 'modified' }], { ...config, contextMode: 'repository' });
+  assert.deepEqual(built.coverage.reviewedFiles, ['a.py', 'z.py']);
+  assert.equal(built.context.files[0]!.excerpts.filter(e => !e.changedLines.length && e.lines[0]?.startsWith('def helper_')).length, 40);
+  assert.ok(built.coverage.omittedFiles.some(o => /20-definition/.test(o.reason)));
+});
+
+test('long definitions are explicitly truncated and single-line brace helpers do not absorb following functions', async () => {
+  const { sameFileDependencies } = await import('../src/dependencies.js');
+  const input = structuredClone(context).files[0]!;
+  input.excerpts = [{ side: 'after', startLine: 200, lines: ['const output = encode(data);'], changedLines: [200] }];
+  const before = 'function encode(data) { return JSON.stringify(data); }\nfunction unrelated() { return "unused"; }';
+  const deps = sameFileDependencies(input, before, before);
+  assert.equal(deps.length, 1);
+  assert.equal(deps[0]!.excerpts[0]!.lines.length, 1);
+  const python = 'def encode(data):\n' + '    result = data\n'.repeat(150);
+  const long = sameFileDependencies(input, python, python)[0]!;
+  assert.equal(long.truncated, true);
+  assert.equal(long.excerpts[0]!.lines.length, 120);
+});

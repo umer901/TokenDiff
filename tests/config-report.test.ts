@@ -49,3 +49,13 @@ test('large reports remain under the comment length limit', () => {
   assert.ok(renderReport(input).length <= 60_000);
   assert.match(renderReport(input), /Additional findings/);
 });
+
+test('renders concrete recommendations and only canonical research links', () => {
+  const input = structuredClone(report());
+  input.findings[0]!.references = [{ techniqueId: 'reuse-or-compute', title: 'evil', url: 'javascript:alert(1)' }];
+  const markdown = renderReport(input);
+  assert.match(markdown, /\*\*Tradeoff:\*\*/);
+  assert.match(markdown, /\*\*Verify:\*\*/);
+  assert.match(markdown, /https:\/\/developers.openai.com\/api\/docs\/guides\/latency-optimization/);
+  assert.equal(markdown.includes('javascript:'), false);
+});

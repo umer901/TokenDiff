@@ -2,6 +2,8 @@ import { structuredPatch } from 'diff';
 import { minimatch } from 'minimatch';
 import { posix } from 'node:path';
 import { MAX_SOURCE_BYTES } from './github.js';
+import { serializeContext } from './context-format.js';
+import { sameFileDependencies } from './dependencies.js';
 import type { ChangedFile, CodeExcerpt, Config, ContextFile, Coverage, PullRequest, RepositoryFile, ReviewContext, SourceRepository, SourceResult } from './types.js';
 
 const BLOCKED_DIRECTORIES = /(^|\/)(?:node_modules|vendor|dist|build|coverage|\.git|\.next|\.venv|venv|__pycache__|target|\.aws|\.ssh|\.kube|secrets?)(\/|$)/i;
@@ -90,6 +92,7 @@ export async function buildContext(
   repository: SourceRepository, pr: PullRequest, changes: ChangedFile[], config: Config, truncated = false,
 ): Promise<{ context: ReviewContext; coverage: Coverage }> {
   const context: ReviewContext = { files: [] };
+  const sources = new Map<ContextFile, { before: string; after: string }>();
   const coverage = emptyCoverage(config.contextMode);
   coverage.changedFiles = pr.changedFiles;
   if (truncated || changes.length < pr.changedFiles) coverage.limitations.push('GitHub did not return the complete changed-file list.');
@@ -101,14 +104,14 @@ export async function buildContext(
     }
     return true;
   });
-  const fits = () => JSON.stringify(context).length <= config.maxContextChars;
+  const fits = () => serializeContext(context).length <= config.maxContextChars;
   for (let index = 0; index < candidates.length; index++) {
     const file = candidates[index]!;
     if (index >= MAX_CHANGED_READS) {
       coverage.omittedFiles.push({ path: file.path, reason: 'The 100 changed-file source-read limit was reached.' });
       continue;
     }
-    if (config.maxContextChars - JSON.stringify(context).length < 200) {
+    if (config.maxContextChars - serializeContext(context).length < 200) {
       coverage.omittedFiles.push({ path: file.path, reason: 'Context budget exhausted.' });
       continue;
     }
@@ -148,8 +151,32 @@ export async function buildContext(
       }
     }
     if (!entry.excerpts.length) context.files.pop();
-    else coverage.reviewedFiles.push(file.path);
+    else {
+      coverage.reviewedFiles.push(file.path);
+      sources.set(entry, { before: oldSource.text, after: newSource.text });
+    }
     if (omitted) coverage.omittedFiles.push({ path: file.path, reason: 'One or more complete hunks did not fit the context budget.' });
+  }
+
+  // All changed hunks take priority, followed by same-file helpers, then other files.
+  if (config.contextMode === 'repository') {
+    let added = 0;
+    for (const [file, source] of sources) {
+      for (const dependency of sameFileDependencies(file, source.before, source.after)) {
+        if (added >= 20) {
+          coverage.omittedFiles.push({ path: file.path, reason: 'Same-file helper selection reached its 20-definition limit.' });
+          break;
+        }
+        file.excerpts.push(...dependency.excerpts);
+        if (!fits()) {
+          file.excerpts.splice(file.excerpts.length - dependency.excerpts.length, dependency.excerpts.length);
+          coverage.omittedFiles.push({ path: file.path, reason: `Referenced helper ${dependency.name} did not fit the context budget.` });
+        } else {
+          added++;
+          if (dependency.truncated) coverage.omittedFiles.push({ path: file.path, reason: `Referenced helper ${dependency.name} was limited to 120 lines per definition.` });
+        }
+      }
+    }
   }
 
   if (config.contextMode === 'repository' && (truncated || changes.length < pr.changedFiles)) {
@@ -182,6 +209,6 @@ export async function buildContext(
       coverage.limitations.push('Repository context could not be retrieved; review uses the available changed code.');
     }
   }
-  coverage.contextChars = JSON.stringify(context).length;
+  coverage.contextChars = serializeContext(context).length;
   return { context, coverage };
 }

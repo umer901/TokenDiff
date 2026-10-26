@@ -1,14 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { runAction } from '../src/action.js';
-import { config, finding, repository, runtime } from './helpers.js';
+import { config, finding, proposal, repository, runtime } from './helpers.js';
 
 test('end-to-end advisory review writes outputs, summary, report, and one comment', async () => {
   const { api, state } = runtime();
   const comments: string[] = [];
   const report = await runAction(api, {
     github: () => repository({ publishComment: async body => { comments.push(body); return 'published'; } }),
-    transport: () => async () => ({ text: JSON.stringify({ findings: [finding] }), complete: true }),
+    transport: () => async () => ({ text: JSON.stringify({ findings: [proposal()] }), complete: true }),
   });
   assert.equal(report.status, 'completed');
   assert.equal(state.outputs['findings-count'], 1);
@@ -124,4 +124,17 @@ test('supplied keys are redacted before source is sent to a provider', async () 
   });
   assert.equal(sent.includes(config.apiKey), false);
   assert.ok(sent.includes('[REDACTED]'));
+});
+
+test('provider diagnostic details survive into the JSON report and job summary', async () => {
+  const { api, state } = runtime();
+  const report = await runAction(api, {
+    github: () => repository(),
+    transport: () => async () => { throw { status: 404, error: { status: 'NOT_FOUND', message: 'Model retired secret-raw-detail' } }; },
+  });
+  assert.equal(report.status, 'error');
+  assert.equal(report.diagnostics!.attempts.length, 1);
+  assert.equal(report.diagnostics!.attempts[0]!.reason, 'model-retired');
+  assert.match(state.summaries[0]!, /HTTP 404/);
+  assert.equal(JSON.stringify(state.reports).includes('secret-raw-detail'), false);
 });

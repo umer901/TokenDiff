@@ -1,5 +1,6 @@
 import { COMMENT_MARKER } from './github.js';
 import type { Finding, Report } from './types.js';
+import { TECHNIQUES } from './knowledge/catalog.js';
 
 /** Provider text is rendered as text, never as executable HTML, links, or mentions. */
 export function plain(value: string): string {
@@ -44,6 +45,11 @@ export function renderReport(report: Report): string {
       `Confidence: **${finding.confidence}** · ${url ? `[${location}](${url})` : location}`, '',
       plain(finding.explanation), '', code(finding.evidence), '',
       `**Likely impact:** ${plain(finding.impact)}`, '', `**Suggestion:** ${plain(finding.suggestion)}`, '',
+      `**Tradeoff:** ${plain(finding.tradeoff)}`, '', `**Verify:** ${plain(finding.verification)}`, '',
+      `**Guidance:** ${finding.techniqueIds.flatMap(id => {
+        const technique = TECHNIQUES.find(t => t.id === id);
+        return technique ? [`[${plain(technique.source.title)}](${technique.source.url})`] : [];
+      }).join(' · ')}`, '',
     ].join('\n');
     if (lines.join('\n').length + block.length > 48_000) {
       lines.push('Additional findings are available in the JSON report (comment size limit).', '');
@@ -63,8 +69,15 @@ export function renderReport(report: Report): string {
     lines.push('');
   }
   for (const limitation of [...c.limitations, ...report.warnings]) lines.push(`- ${plain(limitation)}`);
+  if (report.guidance) lines.push('', `Optimization guidance: ${plain(report.guidance.version)} · ${report.guidance.techniqueIds.length} techniques retrieved · ${report.guidance.chars} additional context characters.`, '');
   if (report.usage) {
     lines.push('', `Review API usage (not application usage): input ${report.usage.inputTokens ?? 'unreported'}, output ${report.usage.outputTokens ?? 'unreported'}, total ${report.usage.totalTokens ?? 'unreported'} tokens.`);
+  }
+  if (report.diagnostics) {
+    lines.push('', `Review attempts: ${report.diagnostics.attempts.length} · elapsed ${report.diagnostics.elapsedMs} ms.`, '');
+    for (const attempt of report.diagnostics.attempts) {
+      lines.push(`- Attempt ${attempt.attempt}: ${plain(attempt.reason)}${attempt.httpStatus ? ` (HTTP ${attempt.httpStatus})` : ''}${attempt.providerCode ? `, ${plain(attempt.providerCode)}` : ''}; ${attempt.elapsedMs} ms${attempt.retryDelayMs === undefined ? '' : `; retry wait ${attempt.retryDelayMs} ms`}.`);
+    }
   }
   lines.push('', '_Advisory only. Findings describe inferred regressions, not measured runtime costs._');
   const result = lines.join('\n');

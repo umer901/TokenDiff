@@ -21,4 +21,4 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run check:bundle
-      - run: npm run eval:live -- --dry-run
+      - run: npm run eval:live -- --dry-run --context-mode=both
