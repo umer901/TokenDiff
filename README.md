@@ -1,9 +1,10 @@
 # TokenDiff
 
-**Catch AI cost regressions before you merge: bloated prompts, duplicate tool calls, and unnecessary agent handoffs.**  
-TokenDiff reviews your PR and suggests concrete pipeline changes using retrieved guidance from research such as **FrugalGPT, RouteLLM, and LLMLingua**.
+TokenDiff is a GitHub Action that catches significant increases in AI usage before merging a commit. It checks for bloated bloated prompts, duplicate tool calls, and unnecessary agent handoffs.
 
-A GitHub Action for any programming language. Bring your own Gemini or OpenAI key; get one updated PR comment with source evidence, suggestions, and research links. No TokenDiff account, backend, or instrumentation required. Findings are advisory and never block a merge.
+TokenDiff reviews your PR and suggests concrete pipeline changes using retrieved guidance from research such as FrugalGPT, RouteLLM, and LLMLingua.
+
+Bring your own Gemini or OpenAI key; get one updated PR comment with source evidence, suggestions, and research links. No account, backend, or instrumentation required. Findings are advisory and never block a merge.
 
 [Get started](#quickstart-gemini-free-tier) · [See an example](#what-a-review-looks-like) · [How it works](#how-it-works) · [Configuration](#inputs-and-outputs)
 
@@ -58,13 +59,11 @@ No checkout step is needed: TokenDiff reads immutable source revisions through G
 
 ### 3. Open a pull request
 
-Push the workflow to your default branch, then open a PR that changes an AI pipeline. For a useful first review, try a change that repeats the same retrieval call or appends the same large tool result twice to a prompt.
+Push the workflow to your default branch, then open a PR that changes an AI pipeline.
 
 Open the PR to see TokenDiff's review comment, or go to **Actions → TokenDiff → Summary**. Subsequent runs update the same comment. A review with no supported findings is a valid result; unrelated changes and justified additional work should not produce findings.
 
 Missing API keys skip the review. Exhausted quota produces an explicit error report and warning, never a clean review. Fork and Dependabot PRs normally lack access to repository secrets.
-
-> **About “free”:** A Gemini key does not guarantee free calls. Availability, billing, quotas, and data handling depend on your model, account, and region. Review Google's [pricing](https://ai.google.dev/gemini-api/docs/pricing), [rate limits](https://ai.google.dev/gemini-api/docs/rate-limits), and [data-use terms](https://ai.google.dev/gemini-api/terms) before sending code. Unpaid services can use submitted content to improve Google's products; the terms include regional exceptions and restrictions.
 
 ## What a review looks like
 
@@ -232,7 +231,7 @@ npm run check
 
 Modules separate GitHub access, context selection, optimization-knowledge retrieval, providers, evidence/citation validation, reporting, and orchestration. Credential-free tests cover those modules and bundled startup.
 
-### Optional live evaluation
+<!-- ### Optional live evaluation
 
 Nineteen synthetic fixtures include Python prompt growth, a TypeScript handoff, a Go duplicate call, and negative cases for intentional safety work, distinct arguments, unrelated changes, and pre-existing inefficiencies. Larger multi-function Python controls exercise tripled serialized tool output, duplicate MCP calls, permission checks, and long tool transcripts. Architecture fixtures cover removed model routing, unconditional analysis, rare high-consequence work, model-name-only changes, intentional quality checks, and quality-gated routing. These reproduce patterns described in the external evaluation; they are not copies of that application’s unavailable source.
 
@@ -250,7 +249,7 @@ npm run eval:live -- --context-mode=both --repeat=3 --report=/tmp/tokendiff-repe
 npm run eval:live -- --context-mode=repository --fixture=python-pipeline-tripled-tool-output
 ```
 
-This sends synthetic fixtures to the chosen provider and may incur charges or exhaust free quota. It prints category-level matches and exits nonzero on mismatches/errors. Evaluation stops on quota/rate-limit failures or excessive server retry delays instead of sending the remaining cases. The optional JSON report records selected and unattempted counts, context mode, repetition, coverage, full findings, latency, diagnostics, and usage. Metrics separate category misses and false positives among completed reviews from invalid responses, incomplete responses, and provider errors. `evidenceValidityRate` is the fraction of completed structured responses passing validation (including empty findings) among completed and invalid responses; transport failures and refusals are excluded. Usage totals sum only provider-reported values, with the number of reporting runs shown. The small fixture set is a smoke evaluation, not a precision/recall benchmark. Mocked tests validate integration, not model detection quality. `--dry-run` makes no API calls.
+This sends synthetic fixtures to the chosen provider and may incur charges or exhaust free quota. It prints category-level matches and exits nonzero on mismatches/errors. Evaluation stops on quota/rate-limit failures or excessive server retry delays instead of sending the remaining cases. The optional JSON report records selected and unattempted counts, context mode, repetition, coverage, full findings, latency, diagnostics, and usage. Metrics separate category misses and false positives among completed reviews from invalid responses, incomplete responses, and provider errors. `evidenceValidityRate` is the fraction of completed structured responses passing validation (including empty findings) among completed and invalid responses; transport failures and refusals are excluded. Usage totals sum only provider-reported values, with the number of reporting runs shown. The small fixture set is a smoke evaluation, not a precision/recall benchmark. Mocked tests validate integration, not model detection quality. `--dry-run` makes no API calls. -->
 
 ## Contributing and releases
 
