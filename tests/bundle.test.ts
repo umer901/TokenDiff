@@ -9,6 +9,15 @@ import { join, resolve } from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
+test('generated notices use checkout-stable LF and retain dependency license text', async () => {
+  const notices = await readFile('dist/THIRD_PARTY_NOTICES.md', 'utf8');
+  // This installed dependency has historically shipped a CRLF license, unlike
+  // the repository's eol=lf policy. Preserve its content without mixed endings.
+  const license = await readFile('node_modules/bignumber.js/LICENCE.md', 'utf8');
+  assert.equal(notices.includes('\r'), false, 'notices must survive LF checkout normalization');
+  assert.ok(notices.includes(license.replace(/\r\n?/g, '\n')), 'complete dependency license must be retained');
+});
+
 test('bundled Action starts in an isolated job and emits a missing-key skip without dependencies or network', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'tokendiff-smoke-'));
   const eventPath = join(directory, 'event.json');

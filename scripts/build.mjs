@@ -42,7 +42,10 @@ for (const root of [...packageRoots].sort()) {
   }
   for (const license of licenses) notices.push(`### ${license}`, '', await readFile(`${root}/${license}`, 'utf8'), '');
 }
-const files = [...result.outputFiles, { path: resolve('dist/THIRD_PARTY_NOTICES.md'), contents: Buffer.from(notices.join('\n')) }];
+// Dependency licenses can contain CRLF (for example bignumber.js). Match the
+// repository's LF checkout policy so --check is stable after a fresh checkout.
+const noticeText = notices.join('\n').replace(/\r\n?/g, '\n');
+const files = [...result.outputFiles, { path: resolve('dist/THIRD_PARTY_NOTICES.md'), contents: Buffer.from(noticeText) }];
 for (const file of files) {
   if (process.argv.includes('--check')) {
     const existing = await readFile(file.path).catch(() => null);
