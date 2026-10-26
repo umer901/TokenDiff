@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 TokenDiff contributors
+
 /** Maintainer-written summaries, not copied passages. See docs/optimization-knowledge.md. */
 export interface Technique {
   id: string;

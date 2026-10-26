@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 TokenDiff contributors
+
 export type Provider = 'gemini' | 'openai';
 export type ContextMode = 'diff' | 'repository';
 export type ReviewStatus = 'completed' | 'partial' | 'skipped' | 'error';

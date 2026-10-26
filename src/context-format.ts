@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 TokenDiff contributors
+
 import { createHash } from 'node:crypto';
 import type { CodeExcerpt, ContextFile, ReviewContext } from './types.js';
 

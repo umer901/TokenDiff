@@ -12,7 +12,9 @@
     "check:bundle": "node scripts/build.mjs --check",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
-    "eval:live": "node --import tsx scripts/evaluate.ts"
+    "eval:live": "node --import tsx scripts/evaluate.ts",
+    "check": "npm run typecheck && npm test && npm run check:bundle && npm run eval:live -- --dry-run --context-mode=both && npm run check:release",
+    "check:release": "node scripts/check-release.mjs"
   },
   "dependencies": {
     "@actions/core": "^3.0.1",
@@ -28,5 +30,22 @@
     "esbuild": "^0.28.2",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/umer901/TokenDiff.git"
+  },
+  "homepage": "https://github.com/umer901/TokenDiff#readme",
+  "bugs": {
+    "url": "https://github.com/umer901/TokenDiff/issues"
+  },
+  "keywords": [
+    "github-action",
+    "ai",
+    "code-review",
+    "tokens",
+    "gemini",
+    "openai"
+  ],
+  "license": "GPL-3.0-or-later"
 }

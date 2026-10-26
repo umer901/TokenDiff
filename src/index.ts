@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 TokenDiff contributors
+
 import * as core from '@actions/core';
 import { context } from '@actions/github';
 import { mkdtemp, writeFile } from 'node:fs/promises';

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 TokenDiff contributors
+
 import { z } from 'zod';
 import type { Finding, ReviewContext } from './types.js';
 import { excerptId } from './context-format.js';

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 TokenDiff contributors
+
 import { fixtureContext, loadFixtures } from './fixtures.js';
 import { readConfig } from '../src/config.js';
 import { createTransport, ProviderFailure, review } from '../src/providers.js';

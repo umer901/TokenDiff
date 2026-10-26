@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 TokenDiff contributors
+
 import { getOctokit } from '@actions/github';
 import type { ChangedFile, GitHubRepository, PullRequest, SourceResult } from './types.js';
 

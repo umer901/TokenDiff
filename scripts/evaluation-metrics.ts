@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 TokenDiff contributors
+
 import type { Coverage, Finding, ReviewDiagnostics, Usage } from '../src/types.js';
 
 export interface EvaluationResult {

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 TokenDiff contributors
+
 import { COMMENT_MARKER } from './github.js';
 import type { Finding, Report } from './types.js';
 import { TECHNIQUES } from './knowledge/catalog.js';

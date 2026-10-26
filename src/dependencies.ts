@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 TokenDiff contributors
+
 import type { CodeExcerpt, ContextFile } from './types.js';
 
 interface Definition { name: string; start: number; end: number }

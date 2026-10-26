@@ -29,7 +29,7 @@ Splitting a pipeline can add calls and latency. A less frequent task is not nece
 
 1. Obtain a [Gemini API key](https://ai.google.dev/gemini-api/docs/api-key). Add an Actions repository **secret** named `GEMINI_API_KEY` under **Settings → Secrets and variables → Actions**.
 2. Add an Actions **variable** named `TOKENDIFF_GEMINI_MODEL` containing an explicit model ID available to your account. Choose a text model supporting [structured outputs through Interactions](https://ai.google.dev/gemini-api/docs/structured-output).
-3. Add the workflow below as `.github/workflows/tokendiff.yml`. Replace `YOUR_ORG/TokenDiff@YOUR_RELEASE_SHA` with the published repository and a full commit SHA. This repository does not yet have a published release.
+3. Add the workflow below as `.github/workflows/tokendiff.yml`. Replace `YOUR_RELEASE_SHA` with the full commit SHA of the TokenDiff revision you reviewed. A pushed commit works before a release tag exists. You can also copy the [example workflow](examples/tokendiff.yml).
 
 ```yaml
 name: TokenDiff
@@ -52,7 +52,7 @@ jobs:
     steps:
       - name: Review AI pipeline efficiency
         id: tokendiff
-        uses: YOUR_ORG/TokenDiff@YOUR_RELEASE_SHA
+        uses: umer901/TokenDiff@YOUR_RELEASE_SHA
         with:
           provider: gemini
           model: ${{ vars.TOKENDIFF_GEMINI_MODEL }}
@@ -152,14 +152,13 @@ Use Node 24 and npm. CI runs without API keys or live provider calls.
 
 ```sh
 npm ci
-npm run typecheck
-npm test
+npm run check
+# After source or dependency changes:
 npm run build
-npm run check:bundle
-npm run eval:live -- --dry-run
+npm run check
 ```
 
-`dist/index.cjs` bundles the Action and dependencies for GitHub's Node 24 runtime. Keep it and its generated legal-notices file with source changes. `check:bundle` compares an in-memory build with existing files; it does not invoke Git or modify the bundle.
+`dist/index.cjs` bundles the Action and dependencies for GitHub's Node 24 runtime. Keep it, `dist/index.cjs.LEGAL.txt`, and `dist/THIRD_PARTY_NOTICES.md` with source changes. The build collects license texts from bundled dependencies, including their vendored notices. `check:bundle` compares an in-memory build with existing files; it does not invoke Git or modify the bundle.
 
 Modules separate GitHub access, context selection, optimization-knowledge retrieval, providers, evidence/citation validation, reporting, and orchestration. Credential-free tests cover those modules and bundled startup.
 
@@ -183,6 +182,10 @@ npm run eval:live -- --context-mode=repository --fixture=python-pipeline-tripled
 
 This sends synthetic fixtures to the chosen provider and may incur charges or exhaust free quota. It prints category-level matches and exits nonzero on mismatches/errors. Evaluation stops on quota/rate-limit failures or excessive server retry delays instead of sending the remaining cases. The optional JSON report records selected and unattempted counts, context mode, repetition, coverage, full findings, latency, diagnostics, and usage. Metrics separate category misses and false positives among completed reviews from invalid responses, incomplete responses, and provider errors. `evidenceValidityRate` is the fraction of completed structured responses passing validation (including empty findings) among completed and invalid responses; transport failures and refusals are excluded. Usage totals sum only provider-reported values, with the number of reporting runs shown. The small fixture set is a smoke evaluation, not a precision/recall benchmark. Mocked tests validate integration, not model detection quality. `--dry-run` makes no API calls.
 
-## Release preparation
+## Contributing and releases
 
-Run the checks, build the bundle, and review the notices and documentation. Select a project license before public distribution; no project license has been selected here. Commit/push/tag operations and publishing are left to the maintainer. Consumers should pin a published full commit SHA. No release, tag, or Marketplace listing is created automatically.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development, [SECURITY.md](SECURITY.md) for vulnerability reporting, and [CHANGELOG.md](CHANGELOG.md) for the prepared initial release. The [release guide](docs/releasing.md) covers checks, hosted smoke testing, and maintainer-run publishing commands. Nothing publishes automatically.
+
+## License
+
+TokenDiff is licensed under [GPL-3.0-or-later](LICENSE). See [NOTICE](NOTICE) for the project notice and [third-party notices](dist/THIRD_PARTY_NOTICES.md) for bundled dependency licenses.

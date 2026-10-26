@@ -1,0 +1,4 @@
+* text=auto eol=lf
+dist/index.cjs linguist-generated=true
+dist/index.cjs.LEGAL.txt linguist-generated=true
+dist/THIRD_PARTY_NOTICES.md linguist-generated=true

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 TokenDiff contributors
+
 import OpenAI from 'openai';
 import { GoogleGenAI } from '@google/genai';
 import { classifyFailure } from './provider-errors.js';

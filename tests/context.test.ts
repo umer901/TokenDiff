@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 TokenDiff contributors
+
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildContext, eligible, excerptsForChange, rankRelatedFiles } from '../src/context.js';

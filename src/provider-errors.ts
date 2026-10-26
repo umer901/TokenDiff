@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 TokenDiff contributors
+
 import { errorStatus } from './github.js';
 
 const HARD_QUOTA = new Set(['insufficient_quota', 'credit_balance_exhausted', 'organization_spend_limit_exceeded',

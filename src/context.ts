@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 TokenDiff contributors
+
 import { structuredPatch } from 'diff';
 import { minimatch } from 'minimatch';
 import { posix } from 'node:path';

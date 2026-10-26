@@ -1,0 +1,31 @@
+name: Bug report
+description: Report an integration, context, or review issue.
+body:
+  - type: markdown
+    attributes:
+      value: Do not include API keys, private source, or raw provider bodies. Report vulnerabilities using SECURITY.md.
+  - type: input
+    id: revision
+    attributes:
+      label: TokenDiff version or commit SHA
+    validations:
+      required: true
+  - type: input
+    id: provider
+    attributes:
+      label: Provider and model
+      description: Model ID only; never include your API key.
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction and expected behavior
+      description: Use a small synthetic before/after example when possible.
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Observed status and coverage
+      description: Include sanitized status, warning codes, and coverage limitations from the summary.
+    validations:
+      required: true

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 TokenDiff contributors
+
 import { readFile } from 'node:fs/promises';
 import { buildContext } from '../src/context.js';
 import type { Config, Finding, SourceRepository } from '../src/types.js';

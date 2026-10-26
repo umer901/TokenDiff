@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 TokenDiff contributors
+
 import type { Config, GitHubRepository, PullRequest, Report, ReviewContext } from '../src/types.js';
 import type { Runtime } from '../src/action.js';
 import { TECHNIQUES } from '../src/knowledge/catalog.js';

@@ -1,8 +1,10 @@
-# TokenDiff integration and evaluation
+# External project evaluation — October 25, 2026
+
+Historical feedback copied from another project. Paths and reproduction commands below refer to that project; its evaluation JSON and source adapter are not included here. This report describes the pinned revision, not the current release candidate.
 
 Evaluated on October 25, 2026 against
 [`umer901/TokenDiff@30cce969f181013b23e4618dd156ad6f2bdada37`](https://github.com/umer901/TokenDiff/tree/30cce969f181013b23e4618dd156ad6f2bdada37).
-Provider results, coverage, and usage are preserved in [tokendiff-evaluation.json](tokendiff-evaluation.json).
+Provider results, coverage, and usage are preserved in `tokendiff-evaluation.json` in the originating project.
 
 **Verdict:** the integration works, including live Gemini requests and defensive
 validation. The eight small synthetic fixtures pass on Gemini 3.5 Flash-Lite.

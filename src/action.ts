@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 TokenDiff contributors
+
 import { ConfigurationError, readConfig, type GetInput } from './config.js';
 import { buildContext, emptyCoverage } from './context.js';
 import { createTransport, ProviderFailure, review, type ProviderTransport } from './providers.js';

@@ -1,0 +1,28 @@
+# Copy to .github/workflows/tokendiff.yml in the repository you want to review.
+# Replace YOUR_RELEASE_SHA with the full SHA of the TokenDiff release you reviewed.
+# Create GEMINI_API_KEY as an Actions secret and TOKENDIFF_GEMINI_MODEL as a variable.
+name: TokenDiff
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+permissions:
+  contents: read
+  pull-requests: write
+concurrency:
+  group: tokendiff-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Review AI pipeline efficiency
+        id: tokendiff
+        uses: umer901/TokenDiff@YOUR_RELEASE_SHA
+        with:
+          provider: gemini
+          model: ${{ vars.TOKENDIFF_GEMINI_MODEL }}
+          api-key: ${{ secrets.GEMINI_API_KEY }}
+          context-mode: diff
+      # For OpenAI, use provider: openai with OPENAI_API_KEY and TOKENDIFF_OPENAI_MODEL.
+      # For more surrounding dependencies, set context-mode: repository.

@@ -4,5 +4,7 @@ coverage/
 .env.*
 !.env.example
 *.tsbuildinfo
-tokendiff-report*.json
+tokendiff-*.json
 
+*.log
+.DS_Store
