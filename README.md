@@ -1,6 +1,6 @@
 # TokenDiff
 
-TokenDiff is a GitHub Action that catches significant increases in AI usage before merging a commit. It checks for bloated bloated prompts, duplicate tool calls, and unnecessary agent handoffs.
+TokenDiff is a GitHub Action that catches significant increases in token usage before merging a commit. It checks for bloated bloated prompts, duplicate tool calls, and unnecessary agent handoffs.
 
 TokenDiff reviews your PR and suggests concrete pipeline changes using retrieved guidance from research such as FrugalGPT, RouteLLM, and LLMLingua.
 
