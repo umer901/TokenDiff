@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="TokenDiff finds AI pipeline efficiency regressions before they merge.">
+    <title>TokenDiff — PR review for AI pipelines</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="masthead">
+      <p class="masthead-label">Pull request review for AI pipelines</p>
+      <a class="source-link" href="https://github.com/umer901/TokenDiff">View source <span aria-hidden="true">↗</span></a>
+    </header>
+
+    <main id="main">
+      <section class="hero" id="top" aria-labelledby="hero-heading">
+        <p class="eyebrow">A GitHub Action · BYO provider key</p>
+        <h1 id="hero-heading">Review AI pipeline changes before they become recurring costs.</h1>
+        <div class="hero-bottom">
+          <p>TokenDiff checks each pull request for new prompt growth, redundant tool calls, and unnecessary agent handoffs. It posts evidence-backed, advisory suggestions directly on the PR.</p>
+          <a class="button" href="#install">Add TokenDiff <span aria-hidden="true">↓</span></a>
+        </div>
+      </section>
+
+      <section class="proof" aria-labelledby="proof-heading">
+        <div class="section-mark" aria-hidden="true">01</div>
+        <div class="proof-copy">
+          <p class="eyebrow">The change under review</p>
+          <h2 id="proof-heading">Review changes that increase the context sent between steps.</h2>
+          <p>TokenDiff focuses on the delta. It looks for the moment a PR starts replaying growing transcripts, duplicating retrieval, or making specialist work unconditional.</p>
+        </div>
+        <figure class="diff-figure">
+          <figcaption><span>case_brief.py</span><span>+ 18 / − 2</span></figcaption>
+          <pre><code><span class="line dim">  async def draft_case_brief(report):</span>
+<span class="line add">+     transcript = [report.model_dump_json()]</span>
+<span class="line add">+     for step in REVIEW_STEPS:</span>
+<span class="line add">+         result = await run_stage(</span>
+<span class="line add">+             input=transcript,</span>
+<span class="line add">+             instructions=step.instructions,</span>
+<span class="line add">+         )</span>
+<span class="line add">+         transcript.append(result.output_text)</span>
+<span class="line dim">      return render_brief(...)</span></code></pre>
+          <p class="margin-note">Each stage now receives every earlier output.</p>
+        </figure>
+      </section>
+
+      <section class="verdict" aria-labelledby="verdict-heading">
+        <div class="section-mark" aria-hidden="true">02</div>
+        <div class="verdict-intro">
+          <p class="eyebrow">What appears in the pull request</p>
+          <h2 id="verdict-heading">A review should leave a trail you can inspect.</h2>
+        </div>
+        <article class="review-sheet" aria-label="Example TokenDiff finding">
+          <div class="sheet-head">
+            <span>TokenDiff / review note</span>
+            <span class="status">Partial coverage</span>
+          </div>
+          <div class="sheet-title">
+            <p>01.</p>
+            <h3>Prompt growth</h3>
+            <p class="severity">medium · high confidence</p>
+          </div>
+          <dl>
+            <div>
+              <dt>Evidence</dt>
+              <dd><code>case_brief.py:54–88</code> accumulates a shared transcript across five sequential model stages.</dd>
+            </div>
+            <div>
+              <dt>Likely impact</dt>
+              <dd>More input context and latency as later stages receive earlier outputs.</dd>
+            </div>
+            <div>
+              <dt>Suggested change</dt>
+              <dd>Pass a compact structured state to the next stage instead of the whole working transcript.</dd>
+            </div>
+            <div>
+              <dt>Tradeoff</dt>
+              <dd>Compression can omit context a refinement step needs; compare quality before changing the contract.</dd>
+            </div>
+          </dl>
+          <p class="sheet-foot">Guidance retrieved from effective-agent and context-engineering research.</p>
+        </article>
+      </section>
+
+      <section class="method" aria-labelledby="method-heading">
+        <div class="section-mark" aria-hidden="true">03</div>
+        <div>
+          <p class="eyebrow">One bounded review</p>
+          <h2 id="method-heading">The review is opinionated about evidence, not architecture.</h2>
+        </div>
+        <ol>
+          <li><span>1</span><strong>Read the PR diff</strong><p>Compare immutable merge-base and head revisions. Changed code stays first in the context budget.</p></li>
+          <li><span>2</span><strong>Retrieve relevant guidance</strong><p>Ground suggestions in a local catalog of routing, compression, and agent-design techniques.</p></li>
+          <li><span>3</span><strong>Validate the response</strong><p>Reject unsupported locations, invented evidence, and citations that were not retrieved.</p></li>
+        </ol>
+      </section>
+
+      <section class="install" id="install" aria-labelledby="install-heading">
+        <div>
+          <p class="eyebrow">Get started</p>
+          <h2 id="install-heading">One workflow. Your provider key.</h2>
+          <p>Use Gemini or OpenAI. TokenDiff has no account, hosted backend, or telemetry. Reviews are advisory and never fail the workflow because they found something.</p>
+        </div>
+        <div class="workflow-block">
+          <div class="workflow-bar"><span>.github/workflows/tokendiff.yml</span><button type="button" data-copy="workflow-code">Copy</button></div>
+          <pre id="workflow-code"><code><span class="yaml-key">name:</span> TokenDiff
+<span class="yaml-key">on:</span> <span class="yaml-value">pull_request</span>
+
+<span class="yaml-key">permissions:</span>
+  <span class="yaml-key">contents:</span> read
+  <span class="yaml-key">pull-requests:</span> write
+
+<span class="yaml-key">jobs:</span>
+  <span class="yaml-key">review:</span>
+    <span class="yaml-key">runs-on:</span> ubuntu-latest
+    <span class="yaml-key">steps:</span>
+      - <span class="yaml-key">uses:</span> umer901/TokenDiff@v0.1.0
+        <span class="yaml-key">with:</span>
+          <span class="yaml-key">provider:</span> gemini
+          <span class="yaml-key">model:</span> ${{ vars.TOKENDIFF_GEMINI_MODEL }}
+          <span class="yaml-key">api-key:</span> ${{ secrets.GEMINI_API_KEY }}</code></pre>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>TokenDiff is GPL-3.0-or-later.</p>
+      <nav aria-label="Footer"><a href="https://github.com/umer901/TokenDiff#readme">Documentation</a><a href="https://github.com/umer901/TokenDiff/issues">Issues</a><a href="https://github.com/umer901/TokenDiff/blob/main/SECURITY.md">Security</a></nav>
+    </footer>
+    <script src="app.js"></script>
+  </body>
+</html>
