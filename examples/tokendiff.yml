@@ -1,5 +1,4 @@
 # Copy to .github/workflows/tokendiff.yml in the repository you want to review.
-# Replace YOUR_RELEASE_SHA with the full SHA of the TokenDiff release you reviewed.
 # Create GEMINI_API_KEY as an Actions secret and TOKENDIFF_GEMINI_MODEL as a variable.
 name: TokenDiff
 on:
@@ -18,7 +17,7 @@ jobs:
     steps:
       - name: Review AI pipeline efficiency
         id: tokendiff
-        uses: umer901/TokenDiff@YOUR_RELEASE_SHA
+        uses: umer901/TokenDiff@0f456623c5419238509ead5a8f03a8d211304267
         with:
           provider: gemini
           model: ${{ vars.TOKENDIFF_GEMINI_MODEL }}

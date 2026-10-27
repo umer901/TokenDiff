@@ -25,7 +25,7 @@ Check the model's [free-tier availability and pricing](https://ai.google.dev/gem
 
 ### 2. Add the workflow
 
-Create `.github/workflows/tokendiff.yml` with the following content. Replace `YOUR_RELEASE_SHA` with the full commit SHA of the TokenDiff revision you reviewed; a pushed commit works before a release tag exists. You can also copy the [example workflow](examples/tokendiff.yml).
+Create `.github/workflows/tokendiff.yml` with the following content. You can also copy the [example workflow](examples/tokendiff.yml).
 
 ```yaml
 name: TokenDiff
@@ -48,7 +48,7 @@ jobs:
     steps:
       - name: Review AI pipeline efficiency
         id: tokendiff
-        uses: umer901/TokenDiff@YOUR_RELEASE_SHA
+        uses: umer901/TokenDiff@0f456623c5419238509ead5a8f03a8d211304267
         with:
           provider: gemini
           model: ${{ vars.TOKENDIFF_GEMINI_MODEL }}
